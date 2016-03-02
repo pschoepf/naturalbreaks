@@ -48,7 +48,7 @@ public class JenksFisher {
     /**
      * Constructor that initializes main variables used in fisher calculation of natural breaks.
      *
-     * @param vcpc List of pairs of values to occurrence counts.
+     * @param vcpc Ordered list of pairs of values to occurrence counts.
      * @param k Number of breaks to find.
      */
     public JenksFisher(List<ValueCountPair> vcpc, int k) {
@@ -65,9 +65,10 @@ public class JenksFisher {
         int cw = 0, w = 0;
 
         ValueCountPair currPair;
+
         for (int i = 0; i != this.numValues; ++i) {
             currPair = vcpc.get(i);
-            assert (i == 0 || currPair.getValue() > vcpc.get(i - 1).getValue()); // PRECONDITION: the value sequence must be strictly increasing
+            assert (i == 0 || currPair.getValue() >= vcpc.get(i - 1).getValue()); // PRECONDITION: the value sequence must be strictly increasing
 
             w = currPair.getCount();
             assert (w > 0); // PRECONDITION: all weights must be positive
@@ -81,16 +82,17 @@ public class JenksFisher {
                 this.previousSSM[i] = cwv * cwv / cw; // prepare sum of squared means for first class. Last (k-1) values are omitted
             }
         }
+
     }
 
     /**
-     * Gets sum of weighs for elements b..e.
+     * Gets sum of weighs for elements with index b..e.
      *
-     * @param b
-     * @param e
-     * @return
+     * @param b index of begin element
+     * @param e index of end element
+     * @return sum of weights.
      */
-    private int getW(int b, int e) {
+    private int getSumOfWeights(int b, int e) {
         assert (b != 0);    // First element always belongs to class 0, thus queries should never include it.
         assert (b <= e);
         assert (e < this.numValues);
@@ -101,13 +103,13 @@ public class JenksFisher {
     }
 
     /**
-     * Gets sum of weighed values for elements b..e
+     * Gets sum of weighed values for elements with index b..e
      *
-     * @param b
-     * @param e
-     * @return
+     * @param b index of begin element
+     * @param e index of end element
+     * @return the cumul. sum of the values*weight
      */
-    private double getWV(int b, int e) {
+    private double getSumOfWeightedValues(int b, int e) {
         assert (b != 0);
         assert (b <= e);
         assert (e < this.numValues);
@@ -118,24 +120,26 @@ public class JenksFisher {
     }
 
     /**
-     * Gets the Squared Mean for elements b..e, multiplied by weight. Note that
+     * Gets the Squared Mean for elements within index b..e, multiplied by weight. Note that
      * n*mean^2 = sum^2/n when mean := sum/n
      *
-     * @param b
-     * @param e
-     * @return
+     * @param b index of begin element
+     * @param e index of end element
+     * @return the sum of squared mean
      */
     private double getSSM(int b, int e) {
-        double res = this.getWV(b, e);
-        return res * res / this.getW(b, e);
+        double res = this.getSumOfWeightedValues(b, e);
+        return res * res / this.getSumOfWeights(b, e);
     }
 
     /**
-     * Finds CB[i+m_NrCompletedRows] given that the result is at least
-     * bp+(m_NrCompletedRows-1) and less than ep+(m_NrCompletedRows-1)
+     * Finds CB[i+completedRows] given that the result is at least
+     * bp+(completedRows-1) and less than ep+(completedRows-1)
      * Complexity: O(ep-bp) <= O(m) @
      *
-     * param i @param bp @param ep
+     * @param i startIndex
+     * @param bp endindex
+     * @param ep
      *
      * @return the index
      */
@@ -161,9 +165,10 @@ public class JenksFisher {
     }
 
     /**
-     * Find CB[i+m_NrCompletedRows] for all i>=bi and i<ei given that the
-     * results are at least bp+(m_NrCompletedRows-1) and less than
-     * ep+(m_NrCompletedRows-1) Complexity: O(log(ei-bi)*Max((ei-bi),(ep-bp)))
+     * Find CB[i+completedRows] for all i>=bi and i<ei given that the
+     * results are at least bp+(completedRows-1) and less than
+     * ep+(completedRows-1)
+     * Complexity: O(log(ei-bi)*Max((ei-bi),(ep-bp)))
      * <= O(m*log(m))
      *
      *
@@ -215,7 +220,7 @@ public class JenksFisher {
     }
 
     /**
-     * Calculation of breaks.
+     * Starting point of calculation of breaks.
      *
      * complexity: O(m*log(m)*k)
      */
@@ -235,7 +240,7 @@ public class JenksFisher {
      *  Does the internal processing to actually create the breaks.
      *
      * @param k number of breaks
-     * @param vcpc input of values and their occurence counts.
+     * @param vcpc asc ordered input of values and their occurence counts.
      */
     public static double[] classifyJenksFisherFromValueCountPairs(int k, List<ValueCountPair> vcpc){
         double[] breaksArray = new double[k];
@@ -282,13 +287,11 @@ public class JenksFisher {
         else {
            int i=0;
             for (ValueCountPair vcp : sortedUniqueValueCounts) {
-                
                 breaksArray[i] = vcp.getValue();
                 i++;
             }
 
         }
-
         List<Double> result = new ArrayList<>(breaksArray.length);
         for(double d:breaksArray) result.add(d);
         return result;
@@ -315,7 +318,7 @@ public class JenksFisher {
         Collections.sort(result, new Comparator<ValueCountPair>(){
             @Override
             public int compare(ValueCountPair o1, ValueCountPair o2) {
-                return (int)((o1.getValue())*1000-(o2.getValue()*1000));
+                return Double.compare(o1.getValue(),o2.getValue());
             }
             
         });
