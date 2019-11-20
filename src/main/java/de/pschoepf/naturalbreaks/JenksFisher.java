@@ -285,6 +285,7 @@ public class JenksFisher {
             breaksArray = classifyJenksFisherFromValueCountPairs(k, sortedUniqueValueCounts);
         }   
         else {
+           breaksArray = new double[sortedUniqueValueCounts.size()];
            int i=0;
             for (ValueCountPair vcp : sortedUniqueValueCounts) {
                 breaksArray[i] = vcp.getValue();
