@@ -27,7 +27,7 @@ import java.util.List;
 /**
  *
  * Basic port of original C code from Maarten Hilferink.
- * All credits this fantastic work go to him for.
+ * All credits for this fantastic work go to him.
  *
  *
  *
